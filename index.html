@@ -3,677 +3,548 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="theme-color" content="#f5f7fb">
-  <meta name="description" content="Estimate campus electricity consumption, energy costs, and carbon emissions.">
-  <title>Campus Power | Energy Estimator</title>
-  <style>
-    :root {
-      color-scheme: light;
-      --ink: #17243b;
-      --muted: #78849a;
-      --line: #e9edf4;
-      --surface: #fff;
-      --canvas: #f5f7fb;
-      --blue: #4169e1;
-      --blue-dark: #3156c6;
-      --blue-light: #edf2ff;
-      --green: #159b72;
-      --green-light: #e8f7f1;
-      --orange: #e28a36;
-      --orange-light: #fff3e7;
-      --purple: #8461dc;
-      --shadow: 0 8px 26px rgba(28, 48, 88, .055);
-      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      font-synthesis: none;
-      text-rendering: optimizeLegibility;
-    }
-
-    * { box-sizing: border-box; }
-    body { margin: 0; min-width: 320px; background: var(--canvas); color: var(--ink); }
-    button, input, select { font: inherit; }
-    button { cursor: pointer; }
-    button:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible {
-      outline: 3px solid rgba(65, 105, 225, .25);
-      outline-offset: 2px;
-    }
-    .app-shell { max-width: 1480px; margin: 0 auto; padding: 28px 42px 44px; }
-    .topbar { display: flex; align-items: center; justify-content: space-between; gap: 20px; margin-bottom: 34px; }
-    .brand { display: flex; align-items: center; gap: 12px; }
-    .brand-mark { display: grid; width: 42px; height: 42px; place-items: center; border-radius: 13px; background: var(--blue); color: white; box-shadow: 0 6px 14px rgba(65, 105, 225, .24); }
-    .brand-mark svg { width: 22px; height: 22px; }
-    .brand-name { font-size: 15px; font-weight: 750; letter-spacing: -.3px; }
-    .brand-caption { margin-top: 2px; color: var(--muted); font-size: 11px; }
-    .top-actions { display: flex; align-items: center; gap: 12px; }
-    .status-pill { display: inline-flex; align-items: center; gap: 8px; padding: 9px 13px; border: 1px solid var(--line); border-radius: 999px; background: var(--surface); color: #536178; font-size: 12px; font-weight: 600; }
-    .status-dot { width: 7px; height: 7px; border-radius: 50%; background: #20b483; box-shadow: 0 0 0 3px #e4f7f0; }
-    .button { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 40px; padding: 0 15px; border: 1px solid transparent; border-radius: 9px; font-size: 12px; font-weight: 650; transition: background .16s ease, transform .16s ease, border-color .16s ease; }
-    .button:hover { transform: translateY(-1px); }
-    .button-primary { background: var(--blue); color: #fff; box-shadow: 0 5px 12px rgba(65, 105, 225, .16); }
-    .button-primary:hover { background: var(--blue-dark); }
-    .button-secondary { border-color: var(--line); background: white; color: #46536b; }
-    .button-secondary:hover { border-color: #ccd5e5; background: #fbfcff; }
-    .button svg { width: 15px; height: 15px; }
-    .intro { display: flex; justify-content: space-between; align-items: end; gap: 18px; margin-bottom: 25px; }
-    .eyebrow { margin: 0 0 8px; color: var(--blue); font-size: 10px; font-weight: 750; letter-spacing: 1.45px; text-transform: uppercase; }
-    h1 { margin: 0; font-size: clamp(25px, 3vw, 33px); letter-spacing: -1.2px; line-height: 1.16; }
-    .intro-copy { margin: 9px 0 0; color: var(--muted); font-size: 13px; line-height: 1.6; }
-    .period-control { display: flex; align-items: center; gap: 9px; padding: 9px 12px; border: 1px solid var(--line); border-radius: 9px; background: white; color: #647087; font-size: 11px; white-space: nowrap; }
-    .period-control input { width: 44px; padding: 2px 0; border: 0; color: var(--ink); font-size: 12px; font-weight: 700; text-align: center; }
-    .period-control input:focus { outline: none; }
-    .metric-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 15px; margin-bottom: 18px; }
-    .metric-card, .panel { border: 1px solid rgba(230, 235, 243, .9); border-radius: 14px; background: var(--surface); box-shadow: var(--shadow); }
-    .metric-card { position: relative; overflow: hidden; min-height: 146px; padding: 19px 20px; }
-    .metric-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; color: #69758a; font-size: 11px; font-weight: 600; }
-    .metric-icon { display: grid; width: 32px; height: 32px; place-items: center; border-radius: 10px; }
-    .metric-icon svg { width: 17px; height: 17px; }
-    .metric-icon.blue { background: var(--blue-light); color: var(--blue); }
-    .metric-icon.green { background: var(--green-light); color: var(--green); }
-    .metric-icon.orange { background: var(--orange-light); color: var(--orange); }
-    .metric-icon.purple { background: #f1edfc; color: var(--purple); }
-    .metric-value { margin-top: 13px; font-size: clamp(23px, 2.4vw, 29px); font-weight: 750; letter-spacing: -1.1px; line-height: 1; }
-    .metric-unit { margin-left: 5px; color: #8390a3; font-size: 11px; font-weight: 500; letter-spacing: 0; }
-    .metric-note { margin-top: 9px; color: #8a95a7; font-size: 10px; }
-    .dashboard-grid { display: grid; grid-template-columns: minmax(0, 1.65fr) minmax(290px, .9fr); gap: 18px; margin-bottom: 18px; }
-    .panel { padding: 20px; }
-    .panel-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 18px; }
-    .panel-title { margin: 0; font-size: 14px; font-weight: 700; letter-spacing: -.25px; }
-    .panel-subtitle { margin: 5px 0 0; color: var(--muted); font-size: 10px; line-height: 1.45; }
-    .chart-legend { display: flex; align-items: center; gap: 7px; color: #778398; font-size: 10px; }
-    .legend-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--blue); }
-    .chart-wrap { position: relative; height: 218px; }
-    #usage-chart { width: 100%; height: 100%; }
-    .breakdown-list { display: flex; flex-direction: column; gap: 15px; padding-top: 4px; }
-    .breakdown-row { display: grid; grid-template-columns: minmax(88px, .8fr) minmax(55px, 1fr) auto; align-items: center; gap: 10px; }
-    .breakdown-name { overflow: hidden; color: #536077; font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }
-    .bar-track { height: 6px; overflow: hidden; border-radius: 999px; background: #eff2f7; }
-    .bar-fill { height: 100%; min-width: 2px; border-radius: inherit; background: var(--blue); }
-    .breakdown-value { color: #34425a; font-size: 10px; font-weight: 650; text-align: right; white-space: nowrap; }
-    .breakdown-empty { padding: 27px 8px; color: var(--muted); font-size: 11px; text-align: center; }
-    .settings-panel { display: grid; grid-template-columns: 1fr 1fr 1.5fr; align-items: center; gap: 20px; margin-bottom: 18px; padding: 16px 20px; }
-    .setting-label { display: block; margin-bottom: 7px; color: #7e899b; font-size: 10px; font-weight: 600; }
-    .setting-input-wrap { display: flex; align-items: baseline; gap: 6px; }
-    .setting-input { width: 100%; max-width: 130px; padding: 0; border: 0; background: transparent; color: var(--ink); font-size: 15px; font-weight: 700; }
-    .setting-suffix { color: #8691a3; font-size: 10px; }
-    .setting-note { color: #8792a4; font-size: 10px; line-height: 1.5; }
-    .section-heading { display: flex; align-items: center; justify-content: space-between; gap: 14px; margin: 28px 0 13px; }
-    .section-heading h2 { margin: 0; font-size: 16px; letter-spacing: -.4px; }
-    .equipment-count { margin-left: 7px; color: #929caf; font-size: 11px; font-weight: 500; }
-    .section-actions { display: flex; align-items: center; gap: 8px; }
-    .table-panel { padding: 0; overflow: hidden; }
-    .table-scroll { overflow-x: auto; }
-    table { width: 100%; border-collapse: collapse; text-align: left; }
-    thead { background: #fafbfe; }
-    th { padding: 12px 14px; color: #8994a6; font-size: 9px; font-weight: 650; letter-spacing: .45px; text-transform: uppercase; white-space: nowrap; }
-    td { padding: 11px 14px; border-top: 1px solid #f0f2f6; color: #445169; font-size: 11px; white-space: nowrap; }
-    th:first-child, td:first-child { padding-left: 20px; }
-    th:last-child, td:last-child { padding-right: 20px; }
-    .equipment-cell { display: flex; align-items: center; gap: 10px; min-width: 170px; }
-    .equipment-icon { display: grid; flex: 0 0 32px; width: 32px; height: 32px; place-items: center; border-radius: 9px; background: #f1f4fa; color: #64748b; font-size: 14px; }
-    .equipment-name { color: #29364d; font-size: 11px; font-weight: 650; }
-    .equipment-category { margin-top: 3px; color: #929daf; font-size: 9px; }
-    .cell-input { width: 64px; padding: 6px 7px; border: 1px solid transparent; border-radius: 6px; background: transparent; color: #45536b; font-size: 11px; }
-    .cell-input:hover { border-color: var(--line); }
-    .cell-input:focus { border-color: #c4d2ff; outline: none; background: #fff; }
-    .cell-input.name-input { width: 110px; color: #29364d; font-weight: 650; }
-    .row-energy { color: #35435c; font-weight: 650; }
-    .remove-button { display: grid; width: 28px; height: 28px; place-items: center; border: 0; border-radius: 7px; background: transparent; color: #a0a9b7; }
-    .remove-button:hover { background: #fff0ef; color: #d65b54; }
-    .remove-button svg { width: 14px; height: 14px; }
-    .table-empty { padding: 35px 20px; color: var(--muted); font-size: 12px; text-align: center; }
-    .insight-panel { display: flex; align-items: flex-start; gap: 12px; margin-top: 17px; padding: 15px 16px; border: 1px solid #f3e5ce; border-radius: 11px; background: #fffaf3; }
-    .insight-icon { display: grid; flex: 0 0 29px; width: 29px; height: 29px; place-items: center; border-radius: 9px; background: #fff0d9; color: #c98128; }
-    .insight-icon svg { width: 15px; height: 15px; }
-    .insight-title { margin: 1px 0 4px; color: #664a29; font-size: 11px; font-weight: 700; }
-    .insight-copy { margin: 0; color: #8b7557; font-size: 10px; line-height: 1.55; }
-    .footer { display: flex; justify-content: space-between; gap: 12px; margin-top: 23px; color: #98a2b1; font-size: 10px; }
-    dialog { width: min(420px, calc(100% - 32px)); padding: 0; border: 1px solid var(--line); border-radius: 15px; box-shadow: 0 20px 70px rgba(27, 40, 67, .2); color: var(--ink); }
-    dialog::backdrop { background: rgba(24, 35, 57, .38); backdrop-filter: blur(2px); }
-    .dialog-content { padding: 23px; }
-    .dialog-title { margin: 0; font-size: 17px; letter-spacing: -.4px; }
-    .dialog-copy { margin: 6px 0 19px; color: var(--muted); font-size: 11px; line-height: 1.5; }
-    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 13px; }
-    .form-field { display: flex; flex-direction: column; gap: 6px; }
-    .form-field.full { grid-column: 1 / -1; }
-    .form-field label { color: #68758a; font-size: 10px; font-weight: 650; }
-    .form-field input, .form-field select { width: 100%; min-height: 38px; padding: 0 10px; border: 1px solid #e3e8f0; border-radius: 7px; background: white; color: var(--ink); font-size: 11px; }
-    .dialog-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 21px; }
-    .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
-
-    @media (max-width: 1000px) {
-      .app-shell { padding-right: 25px; padding-left: 25px; }
-      .metric-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-      .dashboard-grid { grid-template-columns: minmax(0, 1.3fr) minmax(270px, .9fr); }
-      .settings-panel { grid-template-columns: 1fr 1fr; }
-      .settings-panel .setting-note { grid-column: 1 / -1; }
-    }
-    @media (max-width: 700px) {
-      .app-shell { padding: 19px 15px 30px; }
-      .topbar { margin-bottom: 27px; }
-      .status-pill { display: none; }
-      .intro { align-items: flex-start; flex-direction: column; margin-bottom: 19px; }
-      .period-control { align-self: flex-start; }
-      .dashboard-grid { grid-template-columns: 1fr; }
-      .chart-wrap { height: 200px; }
-      .settings-panel { gap: 14px; padding: 15px; }
-      .section-heading { align-items: flex-start; flex-direction: column; }
-      .section-actions { width: 100%; }
-      .footer { flex-direction: column; }
-    }
-    @media (max-width: 420px) {
-      .brand-caption { font-size: 10px; }
-      .top-actions .button { min-height: 36px; padding: 0 10px; font-size: 10px; }
-      .metric-grid { gap: 10px; }
-      .metric-card { min-height: 133px; padding: 14px; }
-      .metric-head { align-items: flex-start; font-size: 10px; }
-      .metric-icon { width: 28px; height: 28px; }
-      .metric-value { font-size: 23px; }
-      .settings-panel { grid-template-columns: 1fr 1fr; }
-      .panel { padding: 16px; }
-    }
-    @media (prefers-reduced-motion: reduce) {
-      *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; }
-    }
-  </style>
+  <title>Campus Power Consumption Estimator</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- Lucide Icons CDN -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link rel="stylesheet" href="style.css">
 </head>
-<body>
-  <main class="app-shell">
-    <header class="topbar">
-      <a class="brand" href="#overview" aria-label="Campus Power home" style="color:inherit;text-decoration:none">
-        <span class="brand-mark" aria-hidden="true">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M13.2 2.5 5.7 13h5.1l-.5 8.5L18.3 11h-5.2l.1-8.5Z"/></svg>
-        </span>
-        <span><span class="brand-name">Campus Power</span><span class="brand-caption" style="display:block">Energy intelligence</span></span>
-      </a>
-      <div class="top-actions">
-        <span class="status-pill"><span class="status-dot"></span>Estimator ready</span>
-        <button class="button button-secondary" id="reset-button" type="button" title="Restore the sample campus equipment">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 2.64-6.36L3 8"/><path d="M3 3v5h5"/></svg>
-          Reset sample
+<body class="theme-light">
+  <div class="app-container">
+    
+    <!-- Top Navigation / Header -->
+    <header class="app-header">
+      <div class="header-left">
+        <div class="logo-badge">
+          <i data-lucide="zap"></i>
+        </div>
+        <div>
+          <h1>VoltCampus</h1>
+          <p class="subtitle">Campus Power Consumption & Carbon Footprint Estimator</p>
+        </div>
+      </div>
+      <div class="header-actions">
+        <div class="currency-picker">
+          <label for="currencySelect"><i data-lucide="coins"></i> Currency:</label>
+          <select id="currencySelect">
+            <option value="$" selected>USD ($)</option>
+            <option value="₹">INR (₹)</option>
+            <option value="€">EUR (€)</option>
+            <option value="£">GBP (£)</option>
+            <option value="A$">AUD (A$)</option>
+            <option value="C$">CAD (C$)</option>
+          </select>
+        </div>
+        <div class="tariff-input-box">
+          <label for="tariffRate"><i data-lucide="receipt"></i> Tariff / kWh:</label>
+          <input type="number" id="tariffRate" value="0.14" step="0.01" min="0.01" max="100">
+        </div>
+        <button id="themeToggleBtn" class="icon-btn" title="Toggle Theme" aria-label="Toggle Theme">
+          <i data-lucide="moon" id="themeIcon"></i>
+        </button>
+        <button id="printBtn" class="btn btn-secondary" title="Export or Print Report">
+          <i data-lucide="printer"></i>
+          <span>Report</span>
         </button>
       </div>
     </header>
 
-    <section id="overview" aria-labelledby="page-title">
-      <div class="intro">
-        <div>
-          <p class="eyebrow">Campus overview</p>
-          <h1 id="page-title">Power consumption estimator</h1>
-          <p class="intro-copy">Understand your campus energy use, forecast electricity costs, and find opportunities to save.</p>
-        </div>
-        <label class="period-control" for="days-per-month">
-          Billing period
-          <input id="days-per-month" type="number" min="1" max="31" step="1" value="30" aria-label="Billing period in days">
-          days / month
-        </label>
+    <!-- Preset Selector Banner -->
+    <section class="preset-section">
+      <div class="preset-label">
+        <i data-lucide="sparkles"></i>
+        <span>Quick Campus Presets:</span>
       </div>
-
-      <div class="metric-grid" aria-live="polite">
-        <article class="metric-card">
-          <div class="metric-head">Daily energy use <span class="metric-icon blue"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13.2 2.5 5.7 13h5.1l-.5 8.5L18.3 11h-5.2l.1-8.5Z"/></svg></span></div>
-          <div class="metric-value"><span id="daily-energy">0.00</span><span class="metric-unit">kWh</span></div>
-          <div class="metric-note">Across all listed equipment</div>
-        </article>
-        <article class="metric-card">
-          <div class="metric-head">Monthly energy use <span class="metric-icon green"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4.5" width="18" height="17" rx="2"/><path d="M16 2.5v4M8 2.5v4M3 9.5h18"/></svg></span></div>
-          <div class="metric-value"><span id="monthly-energy">0.00</span><span class="metric-unit">kWh</span></div>
-          <div class="metric-note">Based on your billing period</div>
-        </article>
-        <article class="metric-card">
-          <div class="metric-head">Estimated monthly bill <span class="metric-icon orange"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2.5v19M17 7H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></span></div>
-          <div class="metric-value"><span id="monthly-cost">₹0</span></div>
-          <div class="metric-note"><span id="rate-note">At ₹8.00 per kWh</span></div>
-        </article>
-        <article class="metric-card">
-          <div class="metric-head">Monthly carbon footprint <span class="metric-icon purple"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.5 3.5c-8.9 0-15 3.9-15 10.1a6.4 6.4 0 0 0 6.3 6.4c6.1 0 8.7-7.5 8.7-16.5Z"/><path d="M3.5 21c3.4-5.1 7.3-8.5 12.5-11.5"/></svg></span></div>
-          <div class="metric-value"><span id="monthly-carbon">0.00</span><span class="metric-unit">kg CO₂</span></div>
-          <div class="metric-note">Estimated from grid intensity</div>
-        </article>
-      </div>
-
-      <div class="dashboard-grid">
-        <section class="panel" aria-labelledby="trend-title">
-          <div class="panel-heading">
-            <div><h2 class="panel-title" id="trend-title">Energy forecast</h2><p class="panel-subtitle">Projected monthly consumption over the next 12 months</p></div>
-            <span class="chart-legend"><span class="legend-dot"></span>Projected usage</span>
+      <div class="preset-buttons">
+        <button class="preset-btn" data-preset="small">
+          <i data-lucide="school"></i>
+          <div>
+            <strong>Small College</strong>
+            <small>~1,500 Students (Commuter)</small>
           </div>
-          <div class="chart-wrap"><canvas id="usage-chart" role="img" aria-label="Projected electricity consumption for the next 12 months"></canvas></div>
-        </section>
-        <section class="panel" aria-labelledby="breakdown-title">
-          <div class="panel-heading">
-            <div><h2 class="panel-title" id="breakdown-title">Usage by equipment</h2><p class="panel-subtitle">Monthly energy consumption</p></div>
+        </button>
+        <button class="preset-btn active" data-preset="medium">
+          <i data-lucide="graduation-cap"></i>
+          <div>
+            <strong>Tech University</strong>
+            <small>~6,500 Students + High Labs</small>
           </div>
-          <div class="breakdown-list" id="breakdown-list"></div>
-        </section>
+        </button>
+        <button class="preset-btn" data-preset="large">
+          <i data-lucide="building-2"></i>
+          <div>
+            <strong>Mega Campus</strong>
+            <small>~22,000 Students + Dorms</small>
+          </div>
+        </button>
+        <button class="preset-btn" data-preset="eco">
+          <i data-lucide="leaf"></i>
+          <div>
+            <strong>Green Eco-Campus</strong>
+            <small>Solar Powered + Efficient</small>
+          </div>
+        </button>
       </div>
+    </section>
 
-      <section class="panel settings-panel" aria-label="Estimation settings">
-        <div>
-          <label class="setting-label" for="electricity-rate">Electricity rate</label>
-          <div class="setting-input-wrap"><input class="setting-input" id="electricity-rate" type="number" min="0" step="0.01" value="8" aria-label="Electricity rate in rupees per kilowatt-hour"><span class="setting-suffix">₹ / kWh</span></div>
+    <!-- Main Grid: Controls & Real-Time Dashboard -->
+    <main class="dashboard-grid">
+      
+      <!-- Left Column: Interactive Facility & Zone Inputs -->
+      <section class="inputs-column">
+        
+        <div class="section-title">
+          <div class="title-with-icon">
+            <i data-lucide="sliders-horizontal"></i>
+            <h2>Campus Facilities & Loads</h2>
+          </div>
+          <button id="resetDefaultsBtn" class="text-btn">
+            <i data-lucide="rotate-ccw"></i> Reset
+          </button>
         </div>
-        <div>
-          <label class="setting-label" for="carbon-intensity">Grid carbon intensity</label>
-          <div class="setting-input-wrap"><input class="setting-input" id="carbon-intensity" type="number" min="0" step="0.01" value="0.71" aria-label="Grid carbon intensity in kilograms per kilowatt-hour"><span class="setting-suffix">kg CO₂ / kWh</span></div>
-        </div>
-        <div class="setting-note">Estimates use the operating hours and days entered for each item. Adjust the tariff and grid intensity to match your local utility data.</div>
+
+        <div class="zones-accordion">
+          
+          <!-- Zone 1: Academic & Classrooms -->
+          <div class="zone-card active" data-zone="academic">
+            <div class="zone-header">
+              <div class="zone-info">
+                <span class="zone-icon academic-icon"><i data-lucide="book-open"></i></span>
+                <div>
+                  <h3>Academic & Lecture Halls</h3>
+                  <span class="zone-quick-stat" id="stat-academic">0 kWh/day</span>
+                </div>
+              </div>
+              <i data-lucide="chevron-down" class="accordion-arrow"></i>
+            </div>
+            <div class="zone-content">
+              <div class="input-grid">
+                <div class="input-group">
+                  <div class="input-label-row">
+                    <label for="classroomsCount">Classrooms / Lecture Halls</label>
+                    <span class="val-display" id="val-classroomsCount">45</span>
+                  </div>
+                  <input type="range" id="classroomsCount" min="5" max="300" value="45" class="slider">
+                </div>
+
+                <div class="input-group">
+                  <div class="input-label-row">
+                    <label for="academicHours">Operating Hours / Day</label>
+                    <span class="val-display" id="val-academicHours">9 hrs</span>
+                  </div>
+                  <input type="range" id="academicHours" min="4" max="16" value="9" class="slider">
+                </div>
+
+                <div class="input-group">
+                  <div class="input-label-row">
+                    <label for="academicAcCoverage">Air Conditioning / HVAC</label>
+                    <span class="val-display" id="val-academicAcCoverage">60%</span>
+                  </div>
+                  <input type="range" id="academicAcCoverage" min="0" max="100" step="5" value="60" class="slider">
+                </div>
+
+                <div class="input-group">
+                  <label for="academicSmartLighting">Lighting Technology</label>
+                  <select id="academicSmartLighting" class="form-select">
+                    <option value="0.5">Modern LED + Motion Sensors (-50%)</option>
+                    <option value="0.75" selected>Standard LED Fixtures (-25%)</option>
+                    <option value="1.0">Fluorescent Tubes (T8/T12)</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Zone 2: Residential Hostels & Dormitories -->
+          <div class="zone-card" data-zone="hostels">
+            <div class="zone-header">
+              <div class="zone-info">
+                <span class="zone-icon hostels-icon"><i data-lucide="bed"></i></span>
+                <div>
+                  <h3>Hostels & Dormitories</h3>
+                  <span class="zone-quick-stat" id="stat-hostels">0 kWh/day</span>
+                </div>
+              </div>
+              <i data-lucide="chevron-down" class="accordion-arrow"></i>
+            </div>
+            <div class="zone-content">
+              <div class="input-grid">
+                <div class="input-group">
+                  <div class="input-label-row">
+                    <label for="hostelResidents">Hostel Residents (Boarders)</label>
+                    <span class="val-display" id="val-hostelResidents">2,400</span>
+                  </div>
+                  <input type="range" id="hostelResidents" min="0" max="15000" step="50" value="2400" class="slider">
+                </div>
+
+                <div class="input-group">
+                  <div class="input-label-row">
+                    <label for="hostelAcPercent">Rooms with Air Conditioning</label>
+                    <span class="val-display" id="val-hostelAcPercent">25%</span>
+                  </div>
+                  <input type="range" id="hostelAcPercent" min="0" max="100" step="5" value="25" class="slider">
+                </div>
+
+                <div class="input-group">
+                  <label for="waterHeatingType">Water Heating System</label>
+                  <select id="waterHeatingType" class="form-select">
+                    <option value="0.2">Solar Thermal + Heat Pumps (Low Grid)</option>
+                    <option value="0.6">Hybrid Solar-Electric Geysers</option>
+                    <option value="1.0" selected>Direct Electric Water Heaters</option>
+                    <option value="0.0">No Water Heating (Ambient/Central Steam)</option>
+                  </select>
+                </div>
+
+                <div class="input-group">
+                  <div class="input-label-row">
+                    <label for="laundryWashers">Commercial Washers & Dryers</label>
+                    <span class="val-display" id="val-laundryWashers">24 units</span>
+                  </div>
+                  <input type="range" id="laundryWashers" min="0" max="150" step="2" value="24" class="slider">
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Zone 3: Computer Labs & Research Facilities -->
+          <div class="zone-card" data-zone="labs">
+            <div class="zone-header">
+              <div class="zone-info">
+                <span class="zone-icon labs-icon"><i data-lucide="cpu"></i></span>
+                <div>
+                  <h3>Labs & Server Facilities</h3>
+                  <span class="zone-quick-stat" id="stat-labs">0 kWh/day</span>
+                </div>
+              </div>
+              <i data-lucide="chevron-down" class="accordion-arrow"></i>
+            </div>
+            <div class="zone-content">
+              <div class="input-grid">
+                <div class="input-group">
+                  <div class="input-label-row">
+                    <label for="computerWorkstations">Computer Workstations</label>
+                    <span class="val-display" id="val-computerWorkstations">650</span>
+                  </div>
+                  <input type="range" id="computerWorkstations" min="0" max="3000" step="25" value="650" class="slider">
+                </div>
+
+                <div class="input-group">
+                  <div class="input-label-row">
+                    <label for="labHours">Lab Operational Hours / Day</label>
+                    <span class="val-display" id="val-labHours">12 hrs</span>
+                  </div>
+                  <input type="range" id="labHours" min="4" max="24" value="12" class="slider">
+                </div>
+
+                <div class="input-group">
+                  <div class="input-label-row">
+                    <label for="specializedLabs">Heavy Science/Engineering Labs</label>
+                    <span class="val-display" id="val-specializedLabs">12 labs</span>
+                  </div>
+                  <input type="range" id="specializedLabs" min="0" max="80" value="12" class="slider">
+                  <small class="field-hint">Fume hoods, CNC, autoclaves, chillers (~35 kWh/lab/day)</small>
+                </div>
+
+                <div class="input-group">
+                  <div class="input-label-row">
+                    <label for="serverRacks">Campus Data Center Server Racks</label>
+                    <span class="val-display" id="val-serverRacks">8 racks</span>
+                  </div>
+                  <input type="range" id="serverRacks" min="0" max="50" value="8" class="slider">
+                  <small class="field-hint">24/7 Servers + Dedicated Precision Cooling (~80 kWh/rack/day)</small>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Zone 4: Administration, Library & Auditoriums -->
+          <div class="zone-card" data-zone="admin">
+            <div class="zone-header">
+              <div class="zone-info">
+                <span class="zone-icon admin-icon"><i data-lucide="landmark"></i></span>
+                <div>
+                  <h3>Library, Admin & Auditoriums</h3>
+                  <span class="zone-quick-stat" id="stat-admin">0 kWh/day</span>
+                </div>
+              </div>
+              <i data-lucide="chevron-down" class="accordion-arrow"></i>
+            </div>
+            <div class="zone-content">
+              <div class="input-grid">
+                <div class="input-group">
+                  <div class="input-label-row">
+                    <label for="libraryArea">Central Library Floor Area</label>
+                    <span class="val-display" id="val-libraryArea">35,000 sq ft</span>
+                  </div>
+                  <input type="range" id="libraryArea" min="5000" max="150000" step="2500" value="35000" class="slider">
+                </div>
+
+                <div class="input-group">
+                  <div class="input-label-row">
+                    <label for="libraryHours">Library Open Hours</label>
+                    <span class="val-display" id="val-libraryHours">14 hrs</span>
+                  </div>
+                  <input type="range" id="libraryHours" min="6" max="24" value="14" class="slider">
+                </div>
+
+                <div class="input-group">
+                  <div class="input-label-row">
+                    <label for="adminStaffCount">Administrative Staff Count</label>
+                    <span class="val-display" id="val-adminStaffCount">180</span>
+                  </div>
+                  <input type="range" id="adminStaffCount" min="10" max="1000" step="10" value="180" class="slider">
+                </div>
+
+                <div class="input-group">
+                  <div class="input-label-row">
+                    <label for="auditoriumCapacity">Main Auditorium Capacity</label>
+                    <span class="val-display" id="val-auditoriumCapacity">1,200 seats</span>
+                  </div>
+                  <input type="range" id="auditoriumCapacity" min="0" max="5000" step="100" value="1200" class="slider">
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Zone 5: Dining, Sports & Campus Utilities -->
+          <div class="zone-card" data-zone="utilities">
+            <div class="zone-header">
+              <div class="zone-info">
+                <span class="zone-icon utilities-icon"><i data-lucide="utensils"></i></span>
+                <div>
+                  <h3>Dining, Pumps & Outdoor Utilities</h3>
+                  <span class="zone-quick-stat" id="stat-utilities">0 kWh/day</span>
+                </div>
+              </div>
+              <i data-lucide="chevron-down" class="accordion-arrow"></i>
+            </div>
+            <div class="zone-content">
+              <div class="input-grid">
+                <div class="input-group">
+                  <div class="input-label-row">
+                    <label for="dailyMeals">Daily Dining Hall Meals</label>
+                    <span class="val-display" id="val-dailyMeals">4,500 meals</span>
+                  </div>
+                  <input type="range" id="dailyMeals" min="0" max="25000" step="250" value="4500" class="slider">
+                  <small class="field-hint">Cold rooms, commercial ovens, dishwashers, exhaust fans</small>
+                </div>
+
+                <div class="input-group">
+                  <div class="input-label-row">
+                    <label for="waterPumpsHp">Campus Water & STP Pump Power</label>
+                    <span class="val-display" id="val-waterPumpsHp">40 HP</span>
+                  </div>
+                  <input type="range" id="waterPumpsHp" min="5" max="250" step="5" value="40" class="slider">
+                </div>
+
+                <div class="input-group">
+                  <div class="input-label-row">
+                    <label for="streetlightsCount">Campus Street & Pathway Lights</label>
+                    <span class="val-display" id="val-streetlightsCount">180 poles</span>
+                  </div>
+                  <input type="range" id="streetlightsCount" min="20" max="1000" step="10" value="180" class="slider">
+                </div>
+
+                <div class="input-group">
+                  <label for="sportsFacilityAc">Indoor Sports Complex / Gym</label>
+                  <select id="sportsFacilityAc" class="form-select">
+                    <option value="0">None / Naturally Ventilated</option>
+                    <option value="60" selected>Medium (Gym + Court Lighting ~60 kWh/d)</option>
+                    <option value="180">Large Arena (Indoor AC + Floodlights ~180 kWh/d)</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Zone 6: Renewable Energy Generation (Offset) -->
+          <div class="zone-card solar-card" data-zone="solar">
+            <div class="zone-header">
+              <div class="zone-info">
+                <span class="zone-icon solar-icon"><i data-lucide="sun"></i></span>
+                <div>
+                  <h3>On-Campus Solar PV (Clean Energy Offset)</h3>
+                  <span class="zone-quick-stat solar-tag" id="stat-solar">-0 kWh/day</span>
+                </div>
+              </div>
+              <i data-lucide="chevron-down" class="accordion-arrow"></i>
+            </div>
+            <div class="zone-content">
+              <div class="input-grid">
+                <div class="input-group">
+                  <div class="input-label-row">
+                    <label for="solarCapacity">Installed Solar Rooftop / Farm</label>
+                    <span class="val-display solar-text" id="val-solarCapacity">250 kWp</span>
+                  </div>
+                  <input type="range" id="solarCapacity" min="0" max="3000" step="25" value="250" class="slider solar-slider">
+                  <small class="field-hint">1 kWp produces ~4.2 kWh clean electricity per sunny day</small>
+                </div>
+
+                <div class="input-group">
+                  <div class="input-label-row">
+                    <label for="peakSunHours">Avg. Peak Sun Hours / Day</label>
+                    <span class="val-display" id="val-peakSunHours">4.5 hrs</span>
+                  </div>
+                  <input type="range" id="peakSunHours" min="2.5" max="6.5" step="0.1" value="4.5" class="slider">
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div> <!-- /zones-accordion -->
+
       </section>
 
-      <section id="equipment" aria-labelledby="equipment-title">
-        <div class="section-heading">
-          <h2 id="equipment-title">Campus equipment <span class="equipment-count" id="equipment-count">0 items</span></h2>
-          <div class="section-actions">
-            <button class="button button-secondary" id="clear-button" type="button">Clear all</button>
-            <button class="button button-primary" id="add-button" type="button">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
-              Add equipment
+      <!-- Right Column: Visual Dashboard, Metrics & Insights -->
+      <section class="results-column">
+        
+        <!-- Summary Headline Cards -->
+        <div class="metrics-grid">
+          
+          <div class="metric-card primary-card">
+            <div class="metric-icon"><i data-lucide="zap"></i></div>
+            <div class="metric-body">
+              <span class="metric-label">Daily Net Consumption</span>
+              <div class="metric-number-wrapper">
+                <span class="metric-value" id="dailyNetKwh">0</span>
+                <span class="metric-unit">kWh/day</span>
+              </div>
+              <span class="metric-subtext" id="dailyGrossSubtext">Gross: 0 kWh | Solar: 0 kWh</span>
+            </div>
+          </div>
+
+          <div class="metric-card">
+            <div class="metric-icon bill-icon"><i data-lucide="wallet"></i></div>
+            <div class="metric-body">
+              <span class="metric-label">Estimated Monthly Bill</span>
+              <div class="metric-number-wrapper">
+                <span class="metric-value currency-symbol">$</span>
+                <span class="metric-value" id="monthlyBill">0</span>
+              </div>
+              <span class="metric-subtext" id="annualBillSubtext">Annual: $0</span>
+            </div>
+          </div>
+
+          <div class="metric-card">
+            <div class="metric-icon carbon-icon"><i data-lucide="cloud"></i></div>
+            <div class="metric-body">
+              <span class="metric-label">Monthly CO₂ Emissions</span>
+              <div class="metric-number-wrapper">
+                <span class="metric-value" id="monthlyCarbon">0</span>
+                <span class="metric-unit">Tonnes</span>
+              </div>
+              <span class="metric-subtext" id="treesSavedSubtext">Offset: 0 trees/yr needed</span>
+            </div>
+          </div>
+
+          <div class="metric-card grade-card">
+            <div class="metric-icon rating-icon"><i data-lucide="award"></i></div>
+            <div class="metric-body">
+              <span class="metric-label">Green Campus Rating</span>
+              <div class="metric-number-wrapper">
+                <span class="grade-badge" id="campusGrade">B+</span>
+                <span class="grade-label" id="gradeDescription">Eco-Progressive</span>
+              </div>
+              <span class="metric-subtext" id="solarCoverPercent">Solar covers 0% of load</span>
+            </div>
+          </div>
+
+        </div> <!-- /metrics-grid -->
+
+        <!-- Graphical Visualizations -->
+        <div class="charts-container">
+          
+          <!-- Chart 1: Breakdown Donut -->
+          <div class="chart-card">
+            <div class="chart-header">
+              <div class="chart-title">
+                <i data-lucide="pie-chart"></i>
+                <h3>Consumption by Campus Zone</h3>
+              </div>
+              <span class="chart-badge">Gross kWh</span>
+            </div>
+            <div class="chart-wrapper">
+              <canvas id="zoneBreakdownChart"></canvas>
+            </div>
+          </div>
+
+          <!-- Chart 2: 12-Month Seasonal Forecast -->
+          <div class="chart-card">
+            <div class="chart-header">
+              <div class="chart-title">
+                <i data-lucide="calendar"></i>
+                <h3>12-Month Academic & Climate Projection</h3>
+              </div>
+              <span class="chart-badge">MWh / Month</span>
+            </div>
+            <div class="chart-wrapper">
+              <canvas id="seasonalTrendChart"></canvas>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Energy Flow / Quick Breakdown Table -->
+        <div class="breakdown-card">
+          <div class="chart-header">
+            <div class="chart-title">
+              <i data-lucide="layers"></i>
+              <h3>Detailed Load & Cost Summary</h3>
+            </div>
+            <button id="downloadCsvBtn" class="pill-btn">
+              <i data-lucide="download"></i> Download CSV
             </button>
           </div>
-        </div>
-        <div class="panel table-panel">
-          <div class="table-scroll">
-            <table>
-              <caption class="sr-only">Campus equipment and estimated energy consumption. Edit values directly in the table.</caption>
-              <thead><tr><th scope="col">Equipment</th><th scope="col">Power (W)</th><th scope="col">Quantity</th><th scope="col">Hours / day</th><th scope="col">Days / month</th><th scope="col">Monthly use</th><th scope="col"><span class="sr-only">Actions</span></th></tr></thead>
-              <tbody id="equipment-body"></tbody>
+          <div class="table-responsive">
+            <table class="summary-table">
+              <thead>
+                <tr>
+                  <th>Campus Sector</th>
+                  <th>Daily (kWh)</th>
+                  <th>Monthly (kWh)</th>
+                  <th>Share (%)</th>
+                  <th>Est. Monthly Cost</th>
+                </tr>
+              </thead>
+              <tbody id="summaryTableBody">
+                <!-- Dynamically populated via JS -->
+              </tbody>
+              <tfoot id="summaryTableFoot">
+                <!-- Totals populated via JS -->
+              </tfoot>
             </table>
-            <div id="empty-state" class="table-empty" hidden>No equipment added yet. Add an item to start estimating campus energy use.</div>
           </div>
         </div>
+
+        <!-- AI Green Campus Energy Conservation Tips -->
+        <div class="tips-card">
+          <div class="tips-header">
+            <i data-lucide="lightbulb"></i>
+            <div>
+              <h3>Campus Energy Optimization Opportunities</h3>
+              <p>Actionable recommendations based on your current campus load distribution</p>
+            </div>
+          </div>
+          <div class="tips-list" id="recommendationsList">
+            <!-- Dynamically populated -->
+          </div>
+        </div>
+
       </section>
 
-      <aside class="insight-panel" aria-live="polite">
-        <span class="insight-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18h6M10 22h4M8.2 14.5a7 7 0 1 1 7.6 0c-.9.6-1.3 1.4-1.3 2.5h-5c0-1.1-.4-1.9-1.3-2.5Z"/></svg></span>
-        <div><h3 class="insight-title" id="insight-title">Campus energy insight</h3><p class="insight-copy" id="insight-copy">Add equipment to see where your campus can save energy.</p></div>
-      </aside>
-      <footer class="footer"><span>Campus Power Estimator · Planning estimates, not a utility bill</span><span>Your equipment data is saved in this browser</span></footer>
-    </section>
-  </main>
+    </main>
 
-  <dialog id="equipment-dialog" aria-labelledby="dialog-title">
-    <form class="dialog-content" id="equipment-form">
-      <h2 class="dialog-title" id="dialog-title">Add equipment</h2>
-      <p class="dialog-copy">Enter the nameplate power and typical operating schedule to estimate energy use.</p>
-      <div class="form-grid">
-        <div class="form-field full"><label for="new-name">Equipment name</label><input id="new-name" name="name" type="text" maxlength="60" placeholder="e.g. Library lights" required></div>
-        <div class="form-field"><label for="new-power">Power (watts)</label><input id="new-power" name="power" type="number" min="0.01" max="1000000" step="any" value="100" required></div>
-        <div class="form-field"><label for="new-quantity">Quantity</label><input id="new-quantity" name="quantity" type="number" min="1" max="100000" step="1" value="1" required></div>
-        <div class="form-field"><label for="new-hours">Hours per day</label><input id="new-hours" name="hours" type="number" min="0" max="24" step="0.25" value="8" required></div>
-        <div class="form-field"><label for="new-days">Days per month</label><input id="new-days" name="days" type="number" min="0" max="31" step="1" value="30" required></div>
-        <div class="form-field full"><label for="new-category">Category</label><select id="new-category" name="category"><option>Climate control</option><option>Lighting</option><option>IT &amp; labs</option><option>Facilities</option><option>Other</option></select></div>
-      </div>
-      <div class="dialog-actions"><button class="button button-secondary" id="cancel-add" type="button">Cancel</button><button class="button button-primary" type="submit">Add to estimate</button></div>
-    </form>
-  </dialog>
+    <!-- Footer -->
+    <footer class="app-footer">
+      <p>VoltCampus Estimator • Engineered with standard IEEE & ASHRAE campus energy modeling benchmarks • Client-side calculation</p>
+    </footer>
 
-  <script>
-    const STORAGE_KEY = "campus-power-estimator-v1";
-    const SAMPLE_EQUIPMENT = [
-      { name: "Ceiling fans", category: "Climate control", power: 78, quantity: 96, hours: 8, days: 30 },
-      { name: "LED tube lights", category: "Lighting", power: 20, quantity: 140, hours: 8, days: 26 },
-      { name: "Split AC units", category: "Climate control", power: 1500, quantity: 18, hours: 6, days: 24 },
-      { name: "Computer lab PCs", category: "IT & labs", power: 180, quantity: 60, hours: 7, days: 26 },
-      { name: "Water pumps", category: "Facilities", power: 750, quantity: 3, hours: 4, days: 30 }
-    ];
-    const CATEGORY_ICONS = {
-      "Climate control": "❄",
-      "Lighting": "☼",
-      "IT & labs": "▣",
-      "Facilities": "⌂",
-      "Other": "ϟ"
-    };
-    const numberFormat = new Intl.NumberFormat("en-IN", { maximumFractionDigits: 2 });
-    const moneyFormat = new Intl.NumberFormat("en-IN", { maximumFractionDigits: 0 });
-    const equipmentBody = document.getElementById("equipment-body");
-    const dialog = document.getElementById("equipment-dialog");
-    const form = document.getElementById("equipment-form");
-    const number = (value) => Number.isFinite(Number(value)) ? Number(value) : 0;
-    let equipment = loadEquipment();
+  </div>
 
-    function loadEquipment() {
-      try {
-        const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
-        if (saved && Array.isArray(saved.equipment) && saved.settings) {
-          document.getElementById("electricity-rate").value = String(Math.max(0, number(saved.settings.rate)));
-          document.getElementById("carbon-intensity").value = String(Math.max(0, number(saved.settings.carbon)));
-          document.getElementById("days-per-month").value = String(Math.min(31, Math.max(1, number(saved.settings.period) || 30)));
-          return saved.equipment.filter(isValidEquipment).map(item => ({ ...item }));
-        }
-      } catch (error) {
-        console.warn("Could not load saved campus estimate.", error);
-      }
-      return SAMPLE_EQUIPMENT.map(item => ({ ...item }));
-    }
-
-    function isValidEquipment(item) {
-      return item && typeof item.name === "string" && item.name.trim() !== "" &&
-        typeof item.category === "string" && ["Climate control", "Lighting", "IT & labs", "Facilities", "Other"].includes(item.category) &&
-        Number.isFinite(Number(item.power)) && Number(item.power) >= 0 &&
-        Number.isFinite(Number(item.quantity)) && Number(item.quantity) >= 0 &&
-        Number.isFinite(Number(item.hours)) && Number(item.hours) >= 0 && Number(item.hours) <= 24 &&
-        Number.isFinite(Number(item.days)) && Number(item.days) >= 0 && Number(item.days) <= 31;
-    }
-
-    function saveState() {
-      try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify({
-          equipment,
-          settings: {
-            rate: number(document.getElementById("electricity-rate").value),
-            carbon: number(document.getElementById("carbon-intensity").value),
-            period: number(document.getElementById("days-per-month").value)
-          }
-        }));
-      } catch (error) {
-        console.warn("Could not save campus estimate in this browser.", error);
-      }
-    }
-
-    function monthlyUse(item) {
-      return number(item.power) * number(item.quantity) * number(item.hours) * number(item.days) / 1000;
-    }
-
-    function renderEquipment() {
-      equipmentBody.replaceChildren();
-      document.getElementById("empty-state").hidden = equipment.length !== 0;
-      document.getElementById("equipment-count").textContent = `${equipment.length} ${equipment.length === 1 ? "item" : "items"}`;
-      equipment.forEach((item, index) => {
-        const row = document.createElement("tr");
-        const itemCell = document.createElement("td");
-        const itemWrap = document.createElement("div");
-        itemWrap.className = "equipment-cell";
-        const icon = document.createElement("span");
-        icon.className = "equipment-icon";
-        icon.setAttribute("aria-hidden", "true");
-        icon.textContent = CATEGORY_ICONS[item.category] || CATEGORY_ICONS.Other;
-        const textWrap = document.createElement("div");
-        const name = document.createElement("input");
-        name.className = "cell-input name-input";
-        name.type = "text";
-        name.maxLength = 60;
-        name.value = item.name;
-        name.setAttribute("aria-label", `Equipment name, row ${index + 1}`);
-        name.dataset.field = "name";
-        const category = document.createElement("div");
-        category.className = "equipment-category";
-        category.textContent = item.category;
-        textWrap.append(name, category);
-        itemWrap.append(icon, textWrap);
-        itemCell.append(itemWrap);
-        row.append(itemCell);
-
-        [["power", "Power in watts", 0, 1000000, "any"], ["quantity", "Quantity", 0, 100000, "1"], ["hours", "Hours per day", 0, 24, "0.25"], ["days", "Days per month", 0, 31, "1"]].forEach(([field, label, min, max, step]) => {
-          const cell = document.createElement("td");
-          const input = document.createElement("input");
-          input.className = "cell-input";
-          input.type = "number";
-          input.min = String(min);
-          input.max = String(max);
-          input.step = String(step);
-          input.value = String(item[field]);
-          input.setAttribute("aria-label", `${label}, ${item.name}`);
-          input.dataset.field = field;
-          cell.append(input);
-          row.append(cell);
-        });
-
-        const energyCell = document.createElement("td");
-        energyCell.className = "row-energy";
-        energyCell.textContent = `${numberFormat.format(monthlyUse(item))} kWh`;
-        row.append(energyCell);
-        const actionCell = document.createElement("td");
-        const remove = document.createElement("button");
-        remove.className = "remove-button";
-        remove.type = "button";
-        remove.setAttribute("aria-label", `Remove ${item.name}`);
-        remove.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M5.5 7l1 14h11l1-14M9 7V4h6v3"/></svg>';
-        remove.addEventListener("click", () => {
-          equipment.splice(index, 1);
-          update();
-        });
-        actionCell.append(remove);
-        row.append(actionCell);
-        equipmentBody.append(row);
-      });
-    }
-
-    function drawChart(monthly) {
-      const canvas = document.getElementById("usage-chart");
-      const rect = canvas.getBoundingClientRect();
-      if (!rect.width || !rect.height) return;
-      const ratio = window.devicePixelRatio || 1;
-      canvas.width = Math.round(rect.width * ratio);
-      canvas.height = Math.round(rect.height * ratio);
-      const ctx = canvas.getContext("2d");
-      if (!ctx) return;
-      ctx.scale(ratio, ratio);
-      const width = rect.width;
-      const height = rect.height;
-      const left = 43;
-      const right = 10;
-      const top = 14;
-      const bottom = 27;
-      const plotWidth = width - left - right;
-      const plotHeight = height - top - bottom;
-      const max = monthly > 0 ? monthly * 1.2 : 10;
-      const labels = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-
-      ctx.font = "10px system-ui, sans-serif";
-      ctx.textBaseline = "middle";
-      for (let i = 0; i <= 3; i++) {
-        const y = top + plotHeight * i / 3;
-        ctx.beginPath();
-        ctx.strokeStyle = "#eef1f6";
-        ctx.lineWidth = 1;
-        ctx.moveTo(left, y);
-        ctx.lineTo(width - right, y);
-        ctx.stroke();
-        ctx.fillStyle = "#97a1b1";
-        ctx.textAlign = "right";
-        ctx.fillText(numberFormat.format(max * (1 - i / 3)), left - 8, y);
-      }
-
-      const points = labels.map((_, i) => ({
-        x: left + (labels.length === 1 ? 0 : (plotWidth * i / (labels.length - 1))),
-        y: top + plotHeight * (1 - monthly / max)
-      }));
-      const gradient = ctx.createLinearGradient(0, top, 0, height - bottom);
-      gradient.addColorStop(0, "rgba(65, 105, 225, .16)");
-      gradient.addColorStop(1, "rgba(65, 105, 225, 0)");
-      ctx.beginPath();
-      ctx.moveTo(points[0].x, height - bottom);
-      points.forEach(point => ctx.lineTo(point.x, point.y));
-      ctx.lineTo(points[points.length - 1].x, height - bottom);
-      ctx.closePath();
-      ctx.fillStyle = gradient;
-      ctx.fill();
-      ctx.beginPath();
-      points.forEach((point, index) => index === 0 ? ctx.moveTo(point.x, point.y) : ctx.lineTo(point.x, point.y));
-      ctx.strokeStyle = "#4169e1";
-      ctx.lineWidth = 2.5;
-      ctx.lineJoin = "round";
-      ctx.stroke();
-      points.forEach((point, index) => {
-        ctx.beginPath();
-        ctx.arc(point.x, point.y, 3, 0, Math.PI * 2);
-        ctx.fillStyle = "#fff";
-        ctx.fill();
-        ctx.strokeStyle = "#4169e1";
-        ctx.lineWidth = 2;
-        ctx.stroke();
-        ctx.fillStyle = "#909bad";
-        ctx.textAlign = "center";
-        ctx.textBaseline = "top";
-        ctx.fillText(labels[index], point.x, height - bottom + 10);
-      });
-    }
-
-    function renderBreakdown(monthlyByItem) {
-      const list = document.getElementById("breakdown-list");
-      list.replaceChildren();
-      const ranked = monthlyByItem.filter(item => item.energy > 0).sort((a, b) => b.energy - a.energy).slice(0, 5);
-      if (ranked.length === 0) {
-        const empty = document.createElement("div");
-        empty.className = "breakdown-empty";
-        empty.textContent = "Energy use will appear here when equipment is added.";
-        list.append(empty);
-        return;
-      }
-      const highest = ranked[0].energy;
-      ranked.forEach(item => {
-        const row = document.createElement("div");
-        row.className = "breakdown-row";
-        const name = document.createElement("span");
-        name.className = "breakdown-name";
-        name.textContent = item.name;
-        name.title = item.name;
-        const track = document.createElement("div");
-        track.className = "bar-track";
-        const bar = document.createElement("div");
-        bar.className = "bar-fill";
-        bar.style.width = `${Math.max(3, item.energy / highest * 100)}%`;
-        track.append(bar);
-        const value = document.createElement("span");
-        value.className = "breakdown-value";
-        value.textContent = `${numberFormat.format(item.energy)} kWh`;
-        row.append(name, track, value);
-        list.append(row);
-      });
-      if (monthlyByItem.filter(item => item.energy > 0).length > ranked.length) {
-        const note = document.createElement("p");
-        note.className = "panel-subtitle";
-        note.textContent = `Showing top ${ranked.length} of ${monthlyByItem.filter(item => item.energy > 0).length} equipment items.`;
-        list.append(note);
-      }
-    }
-
-    function renderInsight(monthlyByItem, totalEnergy, totalCost) {
-      const title = document.getElementById("insight-title");
-      const copy = document.getElementById("insight-copy");
-      const top = monthlyByItem.slice().sort((a, b) => b.energy - a.energy)[0];
-      if (!top || top.energy <= 0 || totalEnergy <= 0) {
-        title.textContent = "Campus energy insight";
-        copy.textContent = equipment.length ? "Add operating hours or equipment power to see meaningful savings opportunities." : "Add equipment to see where your campus can save energy.";
-        return;
-      }
-      const share = Math.round(top.energy / totalEnergy * 100);
-      const potential = top.energy * 0.1 * number(document.getElementById("electricity-rate").value);
-      title.textContent = `${top.name} is your largest energy user`;
-      copy.textContent = `It accounts for ${share}% of estimated monthly campus usage. Reducing its operating time by 10% could save about ${new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 }).format(potential)} per month. Estimated campus bill: ${new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 }).format(totalCost)}.`;
-    }
-
-    function update() {
-      const periodInput = document.getElementById("days-per-month");
-      const period = Math.min(31, Math.max(1, number(periodInput.value) || 30));
-      periodInput.value = String(period);
-      const monthlyByItem = equipment.map(item => ({ name: item.name, energy: monthlyUse(item) }));
-      const monthlyEnergy = monthlyByItem.reduce((sum, item) => sum + item.energy, 0);
-      const avgDaily = monthlyEnergy / period;
-      const rate = number(document.getElementById("electricity-rate").value);
-      const carbon = number(document.getElementById("carbon-intensity").value);
-      const monthlyCost = monthlyEnergy * rate;
-      document.getElementById("daily-energy").textContent = numberFormat.format(avgDaily);
-      document.getElementById("monthly-energy").textContent = numberFormat.format(monthlyEnergy);
-      document.getElementById("monthly-cost").textContent = `₹${moneyFormat.format(monthlyCost)}`;
-      document.getElementById("monthly-carbon").textContent = numberFormat.format(monthlyEnergy * carbon);
-      document.getElementById("rate-note").textContent = `At ₹${numberFormat.format(rate)} per kWh`;
-      equipmentBody.querySelectorAll("tr").forEach((row, index) => {
-        const energyCell = row.children[5];
-        if (energyCell) energyCell.textContent = `${numberFormat.format(monthlyByItem[index].energy)} kWh`;
-      });
-      renderBreakdown(monthlyByItem);
-      renderInsight(monthlyByItem, monthlyEnergy, monthlyCost);
-      drawChart(monthlyEnergy);
-      saveState();
-    }
-
-    equipmentBody.addEventListener("change", (event) => {
-      const input = event.target.closest("input[data-field]");
-      if (!input) return;
-      const row = input.closest("tr");
-      const index = Array.from(equipmentBody.rows).indexOf(row);
-      if (index < 0 || !equipment[index]) return;
-      const field = input.dataset.field;
-      if (field === "name") {
-        equipment[index].name = input.value.trim() || `Equipment ${index + 1}`;
-        input.value = equipment[index].name;
-        input.setAttribute("aria-label", `Equipment name, row ${index + 1}`);
-        const remove = row.querySelector(".remove-button");
-        remove.setAttribute("aria-label", `Remove ${equipment[index].name}`);
-        row.querySelector(".equipment-category").textContent = equipment[index].category;
-      } else {
-        const value = Number(input.value);
-        if (!Number.isFinite(value) || value < Number(input.min) || value > Number(input.max)) {
-          input.setCustomValidity(`Enter a value between ${input.min} and ${input.max}.`);
-          input.reportValidity();
-          input.value = String(equipment[index][field]);
-          input.setCustomValidity("");
-          return;
-        }
-        equipment[index][field] = value;
-      }
-      update();
-    });
-
-    document.getElementById("add-button").addEventListener("click", () => {
-      form.reset();
-      document.getElementById("new-days").value = document.getElementById("days-per-month").value;
-      dialog.showModal();
-      document.getElementById("new-name").focus();
-    });
-    document.getElementById("cancel-add").addEventListener("click", () => dialog.close());
-    form.addEventListener("submit", (event) => {
-      event.preventDefault();
-      if (!form.reportValidity()) return;
-      const values = new FormData(form);
-      const item = {
-        name: String(values.get("name")).trim(),
-        category: String(values.get("category")),
-        power: Number(values.get("power")),
-        quantity: Number(values.get("quantity")),
-        hours: Number(values.get("hours")),
-        days: Number(values.get("days"))
-      };
-      if (!isValidEquipment(item) || item.power <= 0 || item.quantity <= 0) return;
-      equipment.push(item);
-      dialog.close();
-      renderEquipment();
-      update();
-    });
-    ["electricity-rate", "carbon-intensity", "days-per-month"].forEach(id => {
-      document.getElementById(id).addEventListener("input", update);
-      document.getElementById(id).addEventListener("change", update);
-    });
-    document.getElementById("clear-button").addEventListener("click", () => {
-      equipment = [];
-      renderEquipment();
-      update();
-    });
-    document.getElementById("reset-button").addEventListener("click", () => {
-      equipment = SAMPLE_EQUIPMENT.map(item => ({ ...item }));
-      document.getElementById("electricity-rate").value = "8";
-      document.getElementById("carbon-intensity").value = "0.71";
-      document.getElementById("days-per-month").value = "30";
-      renderEquipment();
-      update();
-    });
-    window.addEventListener("resize", () => drawChart(equipment.reduce((sum, item) => sum + monthlyUse(item), 0)));
-    window.addEventListener("storage", (event) => {
-      if (event.key !== STORAGE_KEY || !event.newValue) return;
-      try {
-        const saved = JSON.parse(event.newValue);
-        if (!saved || !Array.isArray(saved.equipment) || !saved.equipment.every(isValidEquipment)) return;
-        equipment = saved.equipment.map(item => ({ ...item }));
-        document.getElementById("electricity-rate").value = String(Math.max(0, number(saved.settings.rate)));
-        document.getElementById("carbon-intensity").value = String(Math.max(0, number(saved.settings.carbon)));
-        document.getElementById("days-per-month").value = String(Math.min(31, Math.max(1, number(saved.settings.period) || 30)));
-        renderEquipment();
-        update();
-      } catch (error) {
-        console.warn("Could not sync saved campus estimate.", error);
-      }
-    });
-    renderEquipment();
-    update();
-  </script>
+  <script src="app.js"></script>
 </body>
 </html>
